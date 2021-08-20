@@ -17,16 +17,22 @@ class UserExistsResponse extends BaseResponse {
 }
 
 class UserExistsProcessor extends PostProcessor {
+    public $login = "";
     /** @throws Exception */
     public function processPost(Repository $repository, array $payload): BaseResponse {
-        $login = $payload["login"];
+        $this->login = $payload["login"];
 
-        requireAllNonNullOrBlank("Cannot be empty: ", ["login" => $login]);
+        requireAllNonNullOrBlank("Cannot be empty: ", ["login" => $this->login]);
 
-        $response = new UserExistsResponse($login);
+        $response = new UserExistsResponse($this->login);
 
         $response->exists = $repository->checkUserExists($payload["login"]);
         return $response;
+    }
+
+    protected function getEmptyResponse(): BaseResponse
+    {
+        return new UserExistsResponse($this->login);
     }
 }
 

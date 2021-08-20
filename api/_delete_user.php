@@ -17,21 +17,27 @@ class DeleteUserResponse extends BaseResponse {
 }
 
 class DeleteUserProcessor extends PostProcessor {
+    private $login = "";
     /** @throws Exception */
     public function processPost(Repository $repository, array $payload): BaseResponse {
         $payload = $this->getPostContent();
-        $login = $payload["login"];
+        $this->login = $payload["login"];
         $userId = $payload["userId"];
 
         requireAllNonNullOrBlank("Cannot be empty: ", [
-            "login" => $login,
+            "login" => $this->login,
             "userId" => $userId
         ]);
 
-        $response = new DeleteUserResponse($login);
+        $response = new DeleteUserResponse($this->login);
 
-        $response->deleted = $repository->deleteUser($login, intval($userId));
+        $response->deleted = $repository->deleteUser($this->login, intval($userId));
         return $response;
+    }
+
+    protected function getEmptyResponse(): BaseResponse
+    {
+        return new DeleteUserResponse($this->login);
     }
 }
 
