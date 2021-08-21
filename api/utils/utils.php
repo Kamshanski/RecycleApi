@@ -78,3 +78,24 @@ function includeOnceAll(string $dir) {
         include_once $filename;
     }
 }
+
+// format "2021-01-01 01-01-01" - UTC always
+function recycleTimestamp() : string {
+    return gmdate('Y-m-d H-i-s');
+}
+
+// https://stackoverflow.com/a/31107425/11103179
+function random_str(
+    int $length = 20,
+    string $keyspace = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+): string {
+    if ($length < 1) {
+        throw new Exception("Length must be a positive integer");
+    }
+    $pieces = "";
+    $max = mb_strlen($keyspace, '8bit') - 1;
+    for ($i = 0; $i < $length; ++$i) {
+        $pieces .= $keyspace[random_int(0, $max)];
+    }
+    return $pieces;
+}

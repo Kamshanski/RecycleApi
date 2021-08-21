@@ -20,11 +20,12 @@ class Database {
      * @throws Exception if no parameters is passed
      * @return array of found items. Empty if nothing was found
      */
-    public function getInfo(?string $id, ?string $barcode, ?string $barcodeType) : array {
+    public function getInfo(?string $globalId, ?string $barcode, ?string $barcodeType) : array {
         // TODO: проверку barcodeType
+
         $query = (new SelectQuery())
             ->in($this->info_table)
-            ->str("_id", $id)
+            ->str("globalId", $globalId)
             ->str("barcode", $barcode)
             ->str("barcodeType", $barcodeType)
             ->build();
@@ -34,7 +35,7 @@ class Database {
         if ($result = mysqli_query($this->link, $query)) {
             while($row = mysqli_fetch_assoc($result)){
                 $item = new Recycle();
-                $item->globalId    = $row["_id"];
+                $item->globalId    = $row["globalId"];
                 $item->name        = $row["name"];
                 $item->barcode     = $row["barcode"];
                 $item->barcodeType = $row["barcodeType"];
@@ -54,6 +55,95 @@ class Database {
         }
 
         return $list;
+    }
+
+    /**  @throws Exception
+     * @noinspection PhpInconsistentReturnPointsInspection
+     * @return null if OK, otherwise error message */
+    public function recordExists(string $globalId) : bool {
+        $query = (new CountQuery())
+            ->in($this->info_table)
+            ->str("globalId", $globalId)
+            ->build();
+
+        if ($result = mysqli_query($this->link, $query)) {
+            $row = $result->fetch_row();
+            return intval($row[0]) != 0;
+        } else {
+            throw_mysqli_error($this->link, "recordExists");
+        }
+    }
+
+    /**  @throws Exception
+     * @noinspection PhpInconsistentReturnPointsInspection
+     * @return globalId */
+    public function addRecycle(CandidateRecycleRecord $candidate) : string {
+        $globalId = $this->createNewGlobalId();
+        $insertQuery = (new InsertQuery())
+            ->in($this->info_table)
+            ->str("globalId", $globalId)
+            ->str("name", $candidate->name)
+            ->str("barcode", $candidate->barcode)
+            ->str("barcodeType", $candidate->barcodeType)
+            ->str("barcodeInfo", $candidate->barcodeInfo)
+            ->str("barcodeLink", $candidate->barcodeLink)
+            ->str("productInfo", $candidate->productInfo)
+            ->str("productType", $candidate->productType)
+            ->str("productLink", $candidate->productLink)
+            ->str("utilizeInfo", $candidate->utilizeInfo)
+            ->str("utilizeLink", $candidate->utilizeLink)
+            ->str("editLog", json_encode([recycleTimestamp() => $candidate->login]))
+            ->build();
+
+        if (mysqli_query($this->link, $insertQuery)) {
+            return $globalId;
+        } else {
+            throw_mysqli_error($this->link, "Add Recycle");
+        }
+    }
+
+    /**  @throws Exception
+     * @noinspection PhpInconsistentReturnPointsInspection
+     * @return globalId */
+    public function updateRecycle(CandidateRecycleRecord $candidate) : string {
+        $previousRecord = $this->getInfo($candidate->globalId, null, null)[0];
+        $editLog = $previousRecord->editLog;
+        $editLog[recycleTimestamp()] = $candidate->login;
+        $updateQuery = (new UpdateQuery())
+            ->in($this->info_table)
+            ->update()
+            ->str("name", $candidate->name)
+            ->str("barcode", $candidate->barcode)
+            ->str("barcodeType", $candidate->barcodeType)
+            ->str("barcodeInfo", $candidate->barcodeInfo)
+            ->str("barcodeLink", $candidate->barcodeLink)
+            ->str("productInfo", $candidate->productInfo)
+            ->str("productType", $candidate->productType)
+            ->str("productLink", $candidate->productLink)
+            ->str("utilizeInfo", $candidate->utilizeInfo)
+            ->str("utilizeLink", $candidate->utilizeLink)
+            ->str("editLog", json_encode($editLog))
+            ->where()
+            ->str("globalId", $candidate->globalId)
+            ->build();
+
+        if (mysqli_query($this->link, $updateQuery)) {
+            return $candidate->globalId;
+        } else {
+            throw_mysqli_error($this->link, "Update Recycle");
+        }
+    }
+    /**  @throws Exception
+     * @noinspection PhpInconsistentReturnPointsInspection
+     * @return string new globalId  */
+    public function createNewGlobalId() : string {
+        while (true) {
+            $id = random_str();
+            $info = $this->getInfo($id, null, null);
+            if (isEmpty($info)) {
+                return $id;
+            }
+        }
     }
 
     /**  @throws Exception
@@ -90,14 +180,14 @@ class Database {
      * @noinspection PhpInconsistentReturnPointsInspection */
     //https://stackoverflow.com/a/3613087/11103179
     public function userExists(string $login) : bool {
-        $query = (new SelectQuery())
+        $query = (new CountQuery())
             ->in($this->users_table)
             ->str("login", $login)
             ->build();
 
         if ($result = mysqli_query($this->link, $query)) {
             $row = $result->fetch_row();
-            return $row[0] != 0;
+            return intval($row[0]) != 0;
         } else {
             throw_mysqli_error($this->link, "UserExists");
         }

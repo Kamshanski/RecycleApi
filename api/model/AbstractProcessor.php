@@ -9,7 +9,7 @@ abstract class AbstractProcessor {
     }
 
     public function run(Repository $repository) {
-        $response = "";
+        $response = null;
         try {
             $response = $this->processForResponse($repository);
             http_response_code(200);
@@ -19,7 +19,7 @@ abstract class AbstractProcessor {
             http_response_code(500);
         } finally {
             $this->addHeaders();
-            echo $response->toJson();;
+            echo $response->toJson();
         }
     }
 

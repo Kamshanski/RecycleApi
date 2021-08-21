@@ -37,7 +37,7 @@ class RecycleOfferPostProcessor extends PostProcessor {
 
         $repository->putOffer(intval($userId), $offer);
 
-        return BaseResponse::SUCCESS();
+        return new LoginResponse($this->login);
     }
 
     protected function getEmptyResponse(): BaseResponse {

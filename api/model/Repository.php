@@ -14,8 +14,8 @@ class Repository {
     }
 
     /**@throws Exception */
-    function getInfo(?string $id, ?string $barcode, ?string $barcodeType) : RecycleList {
-        $list = $this->getDb()->getInfo($id, $barcode, $barcodeType);
+    function getInfo(?string $globalId, ?string $barcode, ?string $barcodeType) : RecycleList {
+        $list = $this->getDb()->getInfo($globalId, $barcode, $barcodeType);
         $recycleList = new RecycleList();
         if (isEmpty($list)) {
             $recycleList->add(new Recycle());
@@ -56,6 +56,15 @@ class Repository {
             throw new Exception("User with login $login is already absent");
         } else {
             return $this->getDb()->deleteUser($login, $userId);
+        }
+    }
+
+    /** * @throws Exception */
+    public function putRecycle(CandidateRecycleRecord $candidate) : bool {
+        if (!isNullOrBlank($candidate->globalId) && $this->getDb()->recordExists($candidate->globalId)) {
+            return $this->getDb()->updateRecycle($candidate) === $candidate->globalId;
+        } else {
+            return isNullOrBlank($this->getDb()->addRecycle($candidate));
         }
     }
 }

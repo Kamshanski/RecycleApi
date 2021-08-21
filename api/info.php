@@ -10,16 +10,21 @@ class RecycleSearchResponse extends BaseResponse {
     protected $partialMatch = array();
 
     public function addFullMatches(RecycleList $items) {
-        $this->fullMatch = array_merge($this->fullMatch, $items->getAll());
+        foreach ($items->getAll() as $key => $val) {
+            $this->fullMatch[] = $val;
+        }
     }
 
     public function addPartialMatches(RecycleList $items) {
-        $this->partialMatch = array_merge($this->partialMatch, $items->getAll());
+        foreach ($items->getAll() as $key => $val) {
+            $this->partialMatch[] = $val;
+        }
     }
 
     function toJson(): string {
         if (isEmpty($this->fullMatch)) {
-            throw new Exception("RecycleSearchResponse is empty");
+            $this->fullMatch = [];
+            //throw new Exception("RecycleSearchResponse is empty");
         }
         return parent::toJson();
     }
@@ -29,7 +34,7 @@ class RecycleSearchProcessor extends GetProcessor {
 
     /*** @throws Exception */
     public function processGet(Repository $repository): BaseResponse {
-        $id = $_GET["id"];
+        $id = $_GET["globalId"];
         $barcode = $_GET["barcode"];
         $barcodeType = $_GET["barcodeType"];
 
@@ -41,6 +46,7 @@ class RecycleSearchProcessor extends GetProcessor {
 
         $response = new RecycleSearchResponse();
         $response->addFullMatches($list);
+
         return $response;
     }
 
