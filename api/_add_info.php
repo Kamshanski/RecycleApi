@@ -17,7 +17,7 @@ class AddRecycleResponse extends BaseResponse {
 }
 
 class AddRecycleProcessor extends PostProcessor {
-    private $login = "";
+    private ?string $login = "";
 
     // TODO: сделать добавление только
 

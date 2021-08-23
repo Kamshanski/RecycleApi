@@ -18,7 +18,7 @@ class Repository {
         $list = $this->getDb()->getInfo($globalId, $barcode, $barcodeType);
         $recycleList = new RecycleList();
         if (isEmpty($list)) {
-            $recycleList->add(new Recycle());
+            $recycleList->add(Recycle::emptyInstance($barcode ?? "", $barcodeType ?? ""));
         } else {
             foreach ($list as $item) {
                 $recycleList->add($item);
@@ -28,8 +28,18 @@ class Repository {
     }
 
     /**@throws Exception */
-    function putOffer(int $userId, RecycleOffer $offer) {
-        $this->getDb()->putOffer($userId, $offer);
+    function putOffer(int $userId, RecycleOffer $offer) : string {
+        return $this->getDb()->putOffer($userId, $offer);
+    }
+
+    /**@throws Exception */
+    function checkOffers(OfferIdList $list) : OfferReportList {
+        $userIds = $list->getAll();
+        $result = new OfferReportList();
+        foreach ($userIds as $userId) {
+            $result->add($this->getDb()->checkOffers($userId));
+        }
+        return $result;
     }
 
     /** @throws Exception */

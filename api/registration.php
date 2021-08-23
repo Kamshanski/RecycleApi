@@ -5,11 +5,11 @@ include_once __DIR__ . "/utils/utils.php";
 includeOnceAll(__DIR__ . "/model");
 
 class RegistrationResponse extends LoginResponse {
-    public $userId = 0;
+    public int $userId = 0;
 }
 
 class RegistrationProcessor extends PostProcessor {
-    private $login = "";
+    private ?string $login = "";
 
     /*** @throws Exception */
     public function processPost(Repository $repository, array $payload): BaseResponse {

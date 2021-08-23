@@ -1,18 +1,21 @@
 <?php
 
+// todo: сделать ограничение на размер пароля, логина и тд. здесь в php
+
 include_once __DIR__ . "/../utils/utils.php";
 includeOnceAll(__DIR__ . "/../utils/query_builders");
 includeOnceAll(__DIR__ . "/entities");
 include_once __DIR__ . "/JsonTransformable.php";
 
 class Database {
-    private $host       = "localhost";
-    private $username   = "id17404411_dawande";
-    private $password   = "#y4y^XB0PxA8u*&2";
-    private $db_name    = "id17404411_recycle";
-    private $info_table = "info";
-    private $offers_table = "new_offers";
-    private $users_table = "users";
+    private string $host       = "localhost";
+    private string $username   = "id17404411_dawande";
+    private string $password   = "#y4y^XB0PxA8u*&2";
+    private string $db_name    = "id17404411_recycle";
+    private string $info_table = "info";
+    private string $offers_table = "new_offers";
+    private string $users_table = "users";
+    private string $processed_offers_table = "processed_offers";
     private $link;
 
     /**
@@ -31,7 +34,6 @@ class Database {
             ->build();
 
         $list = array();
-        // Obligatory to have at least one item
         if ($result = mysqli_query($this->link, $query)) {
             while($row = mysqli_fetch_assoc($result)){
                 $item = new Recycle();
@@ -46,8 +48,9 @@ class Database {
                 $item->productLink = $row["productLink"];
                 $item->utilizeInfo = $row["utilizeInfo"];
                 $item->utilizeLink = $row["utilizeLink"];
+                $item->utilizeLink = $row["popularity"];
                 // true is for parsing JSON object {} as array []. json_decode can't decode pure array [], so {} format in database is a workaround
-                $item->editLog     = json_decode($row["editLog"], true);
+                $item->editLog     = EditLog::fromJson($row["editLog"]);
 
                 $list[] = $item;
             }
@@ -92,7 +95,8 @@ class Database {
             ->str("productLink", $candidate->productLink)
             ->str("utilizeInfo", $candidate->utilizeInfo)
             ->str("utilizeLink", $candidate->utilizeLink)
-            ->str("editLog", json_encode([recycleTimestamp() => $candidate->login]))
+            ->str("popularity",  0)
+            ->str("editLog", EditLog::fromArray([recycleTimestamp() => $candidate->login])->toJson())
             ->build();
 
         if (mysqli_query($this->link, $insertQuery)) {
@@ -107,8 +111,11 @@ class Database {
      * @return globalId */
     public function updateRecycle(CandidateRecycleRecord $candidate) : string {
         $previousRecord = $this->getInfo($candidate->globalId, null, null)[0];
+        if (!($previousRecord instanceof Recycle)) {
+            throw new Exception("Database return invalid array of " . get_class($previousRecord));
+        }
         $editLog = $previousRecord->editLog;
-        $editLog[recycleTimestamp()] = $candidate->login;
+        $editLog->add(recycleTimestamp(), $candidate->login);
         $updateQuery = (new UpdateQuery())
             ->in($this->info_table)
             ->update()
@@ -122,7 +129,8 @@ class Database {
             ->str("productLink", $candidate->productLink)
             ->str("utilizeInfo", $candidate->utilizeInfo)
             ->str("utilizeLink", $candidate->utilizeLink)
-            ->str("editLog", json_encode($editLog))
+            ->str("popularity", $previousRecord->popularity)
+            ->str("editLog", $editLog->toJson())
             ->where()
             ->str("globalId", $candidate->globalId)
             ->build();
@@ -148,12 +156,14 @@ class Database {
 
     /**  @throws Exception
      * @noinspection PhpInconsistentReturnPointsInspection
-     * @return null if OK, otherwise error message */
-    public function putOffer(int $userId, RecycleOffer $offer) {
+     * @return offerId if OK, otherwise error message */
+    public function putOffer(int $userId, RecycleOffer $offer) : string {
         if (($offer->globalId || $offer->name || $offer->productInfo || $offer->utilizeInfo || $offer->image)) {
             if ($this->validateUser($offer->login, $userId)) {
+                $offerId = $this->timeLoginId($offer->login);
                 $query = (new InsertQuery())
                     ->in($this->offers_table)
+                    ->str("offerId", $offerId)
                     ->str("login", $offer->login)
                     ->str("globalId", $offer->globalId)
                     ->str("name", $offer->name)
@@ -168,11 +178,52 @@ class Database {
                 if (!mysqli_query($this->link, $query)) {
                     throw_mysqli_error($this->link, "Put Offer");
                 }
+                return $offerId;
             } else {
                 throw new Exception("Login $offer->login does not match userId $userId");
             }
         } else {
             throw new Exception("Offer must not be empty");
+        }
+    }
+
+    // year-month-day-hour-minutes-seconds-millis-micros-login
+    // Id constructed to be absolutely unique, even if it's less efficient
+    public function timeLoginId(string $login) : string {
+        $fullMicro = microtime(false);
+        $from = strpos($fullMicro, ".") + 1;
+        $len = strpos($fullMicro, " ") - $from;
+        $micro = substr($fullMicro, $from, $len);
+        return gmdate('YmdHis') . $micro . $login;
+    }
+
+    public function checkOffers(string $offerId) : OfferReport {
+        $selectQuery = (new SelectQuery())
+            ->in($this->processed_offers_table)
+            ->select("accepted")
+            ->select("date")
+            ->str("offerId", $offerId)
+            ->build();
+
+        if ($result = mysqli_query($this->link, $selectQuery)) {
+            $row = mysqli_fetch_assoc($result);
+            $report = null;
+            if ($row) {
+                $isAccepted = $row["isAccepted"];
+                $time = $row["time"];
+                if ($isAccepted == null || $time == null) {
+                    throw new Exception("Inconsistent database offer report of $offerId");
+                }
+                $report = new OfferReport(true);
+                $report->offerId = $offerId;
+                $report->isAccepted = boolval($isAccepted);
+                $report->time = strval($time);
+            } else {
+                $report = new OfferReport(false);
+            }
+
+            mysqli_free_result($result);
+            return $report;
         }
     }
 

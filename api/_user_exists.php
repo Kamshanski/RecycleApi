@@ -17,7 +17,7 @@ class UserExistsResponse extends BaseResponse {
 }
 
 class UserExistsProcessor extends PostProcessor {
-    public $login = "";
+    public ?string $login = "";
     /** @throws Exception */
     public function processPost(Repository $repository, array $payload): BaseResponse {
         $this->login = $payload["login"];

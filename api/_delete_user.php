@@ -17,7 +17,7 @@ class DeleteUserResponse extends BaseResponse {
 }
 
 class DeleteUserProcessor extends PostProcessor {
-    private $login = "";
+    private ?string $login = "";
     /** @throws Exception */
     public function processPost(Repository $repository, array $payload): BaseResponse {
         $payload = $this->getPostContent();

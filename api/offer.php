@@ -1,13 +1,20 @@
 <?php
 
-use mysql_xdevapi\BaseResult;
 
 include_once __DIR__ . "/_main.php";
 include_once __DIR__ . "/utils/utils.php";
 includeOnceAll(__DIR__ . "/model");
 
+class OfferPostResponse extends LoginResponse {
+    public string $offerId = ""; // empty if error occurred
+    public function __construct(?string $login, string $offerId = "") {
+        parent::__construct($login);
+        $this->offerId = $offerId;
+    }
+}
+
 class RecycleOfferPostProcessor extends PostProcessor {
-    private $login = "";
+    private ?string $login = "";
 
     /** @throws Exception */
     public function processPost(Repository $repository, array $payload): BaseResponse {
@@ -35,13 +42,13 @@ class RecycleOfferPostProcessor extends PostProcessor {
             $payload["image"] ?? null
         );
 
-        $repository->putOffer(intval($userId), $offer);
+        $offerId = $repository->putOffer(intval($userId), $offer);
 
-        return new LoginResponse($this->login);
+        return new OfferPostResponse($this->login, $offerId);
     }
 
     protected function getEmptyResponse(): BaseResponse {
-        return new LoginResponse($this->login);
+        return new OfferPostResponse($this->login);
     }
 }
 

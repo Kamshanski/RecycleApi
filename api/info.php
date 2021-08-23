@@ -6,8 +6,8 @@ includeOnceAll(__DIR__ . "/model");
 
 
 class RecycleSearchResponse extends BaseResponse {
-    protected $fullMatch = array();
-    protected $partialMatch = array();
+    protected array $fullMatch = array();
+    protected array $partialMatch = array();
 
     public function addFullMatches(RecycleList $items) {
         foreach ($items->getAll() as $key => $val) {

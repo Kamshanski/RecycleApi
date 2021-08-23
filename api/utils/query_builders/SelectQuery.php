@@ -2,7 +2,7 @@
 include_once __DIR__ . "/../utils.php";
 
 class SelectQuery {
-    private $select = "*";
+    private $select = array();
     private $tableName;
     private $strings = array();
     private $ints = array();
@@ -10,7 +10,7 @@ class SelectQuery {
 
     public function select(?string $select) : SelectQuery {
         if ($select)
-            $this->select = $select;
+            $this->select[] = $select;
         return $this;
     }
 
@@ -45,7 +45,18 @@ class SelectQuery {
             throw new Exception("Query is empty");
         }
 
-        $query = "SELECT ".($this->select === "*" ? $this->select : "`$this->select`")." FROM `$this->tableName` WHERE ";
+        $query = "SELECT ";
+
+        if (isEmpty($this->select)) {
+            $query .= "*";
+        } else {
+            foreach ($this->ints as $field) {
+                $query .= "`$field`, ";
+            }
+            $query .= rtrim($query, ", ");
+        }
+
+        $query .= " FROM `$this->tableName` WHERE ";
 
         foreach ($this->ints as $name => $int) {
             $query .= "`$name` = $int AND ";
