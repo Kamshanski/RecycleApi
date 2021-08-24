@@ -13,9 +13,8 @@ class Database {
     private string $password   = "#y4y^XB0PxA8u*&2";
     private string $db_name    = "id17404411_recycle";
     private string $info_table = "info";
-    private string $offers_table = "new_offers";
+    private string $offers_table = "offers";
     private string $users_table = "users";
-    private string $processed_offers_table = "processed_offers";
     private $link;
 
     /**
@@ -171,10 +170,11 @@ class Database {
                     ->str("barcodeType", $offer->barcodeType)
                     ->str("productInfo", $offer->productInfo)
                     ->str("utilizeInfo", $offer->utilizeInfo)
-                    ->str("offerDate", $offer->offerDate)
+                    ->str("time", recycleTimestamp())
+                    ->str("processStatus", "UNSTUDIED")
+                    ->str("processComment", null)
                     ->str("image", $offer->image)
                     ->build();
-
                 if (!mysqli_query($this->link, $query)) {
                     throw_mysqli_error($this->link, "Put Offer");
                 }
@@ -197,11 +197,14 @@ class Database {
         return gmdate('YmdHis') . $micro . $login;
     }
 
+    /**  @throws Exception
+     * @noinspection PhpInconsistentReturnPointsInspection */
     public function checkOffers(string $offerId) : OfferReport {
         $selectQuery = (new SelectQuery())
-            ->in($this->processed_offers_table)
-            ->select("accepted")
-            ->select("date")
+            ->in($this->offers_table)
+            ->select("processStatus")
+            ->select("processComment")
+            ->select("time")
             ->str("offerId", $offerId)
             ->build();
 
@@ -209,22 +212,23 @@ class Database {
             $row = mysqli_fetch_assoc($result);
             $report = null;
             if ($row) {
-                $isAccepted = $row["isAccepted"];
+                $status = $row["processStatus"];
+                $comment = $row["processComment"];
                 $time = $row["time"];
-                if ($isAccepted == null || $time == null) {
-                    throw new Exception("Inconsistent database offer report of $offerId");
+                if ($status == null || $time == null) {
+                    throw new Exception("Inconsistent offer $offerId in DB");
                 }
-                $report = new OfferReport(true);
-                $report->offerId = $offerId;
-                $report->isAccepted = boolval($isAccepted);
+                $report = new OfferReport($offerId);
+                $report->processStatus = $status;
+                $report->processComment = $comment;
                 $report->time = strval($time);
             } else {
-                $report = new OfferReport(false);
+                $report = new OfferReport($offerId, false);
             }
 
             mysqli_free_result($result);
             return $report;
-        }
+        } else throw new Exception("Nothing was found on offerId $offerId");
     }
 
     /**  @throws Exception

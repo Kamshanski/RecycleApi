@@ -66,7 +66,7 @@ function endsWith($string, $endString) : bool {
 
 /** @throws Exception */
 function throw_mysqli_error($link, ?string $when = null) {
-    throw new Exception("Mysqli exception" . ($when ? "when $when" : "") . ": " . mysqli_error($link));
+    throw new Exception("Mysqli exception" . ($when ? " when $when" : "") . ": " . mysqli_error($link));
 }
 
 /**
@@ -79,9 +79,9 @@ function includeOnceAll(string $dir) {
     }
 }
 
-// format "2021-01-01 01-01-01" - UTC always
+// format "2021-01-01 01:01:01" - UTC always
 function recycleTimestamp() : string {
-    return gmdate('Y-m-d H-i-s');
+    return gmdate('Y-m-d H:i:s');
 }
 
 // https://stackoverflow.com/a/31107425/11103179

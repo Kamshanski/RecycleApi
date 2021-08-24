@@ -3,6 +3,15 @@
 class OfferIdList {
     private array $list = array();
 
+    /**
+     * @param array $list
+     */
+    public function __construct(?array $list = null) {
+        if ($list && is_array($list)) {
+            $this->addAll($list);
+        }
+    }
+
     public function add(?string $value) {
         if ($value)
             $this->list[] = $value;
@@ -17,5 +26,4 @@ class OfferIdList {
             $this->add($offerId);
         }
     }
-
 }

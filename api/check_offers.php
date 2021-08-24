@@ -19,10 +19,10 @@ class CheckOffersProcessor extends GetProcessor {
     public function processGet(Repository $repository): BaseResponse {
         // todo: добавть проверку userId
         $this->login = $_GET["login"];
+        check(isset($this->login), "login must be non-null");
         $offerIds = json_decode($_GET["offerIds"],true);
         if ($offerIds != null && isEmpty($offerIds)) {
-            $offerIdList = new OfferIdList();
-            $offerIdList->addAll($offerIds);
+            $offerIdList = new OfferIdList($offerIds);
             $reports = $repository->checkOffers($offerIdList);
             $response = new CheckOffersResponse($this->login);
             $response->list = $reports->getAll();

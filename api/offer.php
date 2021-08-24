@@ -38,7 +38,7 @@ class RecycleOfferPostProcessor extends PostProcessor {
             $barcodeType,
             $payload["productInfo"] ?? null,
             $payload["utilizeInfo"] ?? null,
-            date(DATE_ISO8601),
+            recycleTimestamp(),
             $payload["image"] ?? null
         );
 

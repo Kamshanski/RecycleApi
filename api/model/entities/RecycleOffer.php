@@ -3,15 +3,15 @@
 include_once __DIR__ . "/../../utils/utils.php";
 
 class RecycleOffer{
-    public $login      = "";
-    public $globalId    = null;
-    public $name        = null;
-    public $barcode     = "";
-    public $barcodeType = "UNKNOWN";
-    public $productInfo = null;
-    public $utilizeInfo = null;
-    public $offerDate   = "";
-    public $image       = null;
+    public string $login        = "";
+    public ?string $globalId    = null;
+    public ?string $name        = null;
+    public string $barcode      = "";
+    public string $barcodeType  = "UNKNOWN";
+    public ?string $productInfo = null;
+    public ?string $utilizeInfo = null;
+    public string $time         = "";
+    public ?string $image       = null;
 
     public function __construct(
         string $login,
@@ -21,7 +21,7 @@ class RecycleOffer{
         string $barcodeType,
         ?string $productInfo,
         ?string $utilizeInfo,
-        string $offerDate,
+        string $time,
         ?string $image
     ) {
         $this->login        = stringOrNull($login       );
@@ -31,7 +31,7 @@ class RecycleOffer{
         $this->barcodeType  = stringOrNull($barcodeType );
         $this->productInfo  = stringOrNull($productInfo );
         $this->utilizeInfo  = stringOrNull($utilizeInfo );
-        $this->offerDate    = stringOrNull($offerDate   );
+        $this->time         = stringOrNull($time        );
         $this->image        = stringOrNull($image       );
     }
 
